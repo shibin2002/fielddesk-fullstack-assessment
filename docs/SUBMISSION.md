@@ -17,10 +17,10 @@ Create the fork under your own GitHub account.
 Replace `<your-github-username>` in the commands below:
 
 ```bash
-git clone https://github.com/<your-github-username>/fielddesk-fullstack-assessment.git
+git clone https://github.com/shibin2002/fielddesk-fullstack-assessment.git
 cd fielddesk-fullstack-assessment
 git remote add upstream https://github.com/DT-Gatlier/fielddesk-fullstack-assessment.git
-git switch -c assessment/<your-github-username>
+git switch -c assessment/shibin2002
 ```
 
 Confirm the remotes before starting:
@@ -55,7 +55,7 @@ Do not delete unanswered sections. Use `Not applicable` where appropriate.
 ## 5. Push your branch
 
 ```bash
-git push -u origin assessment/<your-github-username>
+git push -u origin assessment/shibin2002
 ```
 
 ## 6. Open the pull request

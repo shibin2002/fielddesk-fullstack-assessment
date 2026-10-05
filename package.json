@@ -1,0 +1,24 @@
+{
+  "name": "fielddesk",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "worker",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,worker,web -c blue,magenta,green \"npm run dev -w backend\" \"npm run dev -w worker\" \"npm run dev -w frontend\"",
+    "dev:standalone": "tsx scripts/standalone.ts",
+    "migrate": "npm run migrate -w backend",
+    "seed": "npm run seed -w backend",
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "lint": "npm run lint -w backend && npm run lint -w worker && npm run lint -w frontend",
+    "build": "npm run build -w backend && npm run build -w worker && npm run build -w frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "embedded-postgres": "^18.1.0-beta.16",
+    "redis-memory-server": "^0.14.0",
+    "tsx": "^4.20.5"
+  }
+}

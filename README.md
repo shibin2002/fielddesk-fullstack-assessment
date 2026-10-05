@@ -12,6 +12,67 @@ FieldDesk is a fictional field-service application created solely for this asses
 4. Complete the [technical notes](candidate-submission/TECHNICAL_NOTES.md) and [AI usage disclosure](candidate-submission/AI_USAGE.md).
 5. Raise questions or blockers through a GitHub Issue in this repository.
 
+## Run the application
+
+The supported setup is Docker Compose. From the repository root:
+
+```bash
+docker compose up --build
+```
+
+Open http://localhost:8080. The API is also published on http://localhost:3000. Compose migrates and seeds on startup. The Compose `JWT_SECRET` is a local placeholder, not a production secret.
+
+To run the processes on the host and only the data services in Docker:
+
+```bash
+docker compose up -d postgres redis
+copy .env.example .env
+npm install
+npm run migrate
+npm run seed
+npm run dev
+```
+
+Open http://localhost:5173. The Vite server proxies `/api` to the API, so the browser stays on one origin and the session cookies are sent.
+
+On a Windows machine that already has PostgreSQL 17 and does not have Docker, `npm run dev:standalone` starts a disposable database cluster, Redis, the API, the worker, and the frontend. Docker Compose remains the setup a reviewer should use.
+
+### Checks
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+All three completed successfully on 5 October 2026. `npm test` passed 19 backend tests and 2 frontend tests. Lint reported no warnings. The API, worker, and frontend build completed.
+
+`npm test` uses `DATABASE_URL` when it already points at a database named `fielddesk_test`, and `REDIS_URL` when it uses Redis database `/15`. Otherwise the test harness starts PostgreSQL and Redis itself. It refuses to truncate any database whose name is not `fielddesk_test`.
+
+The running application was also checked over HTTP: health, readiness, sign-in, the dashboard, the work-order list, and the scheduling conflict on `NW-10421` all succeeded. The sign-in page returned HTTP 200 and does not display the seed password.
+
+Docker Compose and the same API flows in Postman were run by the candidate on another machine and reported successful. `docker compose up --build` is the reviewer setup.
+
+### Demo accounts
+
+The sign-in screen does not show a password. These accounts exist only in the local seed data. Every one uses `FieldDesk-Assess-1`.
+
+Do not commit `.env`, `uploads/`, or `.local/`. Those paths are listed in `.gitignore`. `.env.example` contains local placeholders only.
+
+| Organisation | Email | Role |
+| --- | --- | --- |
+| Northwind Maintenance | owner@northwind.test | Owner |
+| Northwind Maintenance | dispatcher@northwind.test | Dispatcher |
+| Northwind Maintenance | alex.rivera@northwind.test | Technician |
+| Northwind Maintenance | sam.patel@northwind.test | Technician |
+| Harborline Services | owner@harborline.test | Owner |
+| Harborline Services | dispatcher@harborline.test | Dispatcher |
+| Harborline Services | rory.nguyen@harborline.test | Technician |
+
+Alex Rivera is booked tomorrow 09:00–11:00 on `NW-10421`. Assigning that same window to `NW-10423` returns a scheduling conflict. Harborline cannot see Northwind jobs. Owners can switch the mock notification provider under Settings, then assign a job and watch the delivery attempts.
+
+Design notes, failure behaviour, and limitations are in [candidate-submission/TECHNICAL_NOTES.md](candidate-submission/TECHNICAL_NOTES.md).
+
 ## Required stack
 
 - React or Next.js with TypeScript

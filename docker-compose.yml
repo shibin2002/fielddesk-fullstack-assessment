@@ -1,0 +1,102 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fielddesk
+      POSTGRES_PASSWORD: fielddesk
+      POSTGRES_DB: fielddesk
+    ports:
+      - "5432:5432"
+    volumes:
+      - fielddesk_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fielddesk -d fielddesk"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgres://fielddesk:fielddesk@postgres:5432/fielddesk
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: dev-only-change-me-not-for-production-use-32
+      ACCESS_TOKEN_TTL: 15m
+      REFRESH_TOKEN_DAYS: 7
+      COOKIE_SECURE: "false"
+      TRUST_PROXY: "true"
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+      LOG_LEVEL: info
+      SEED_ON_START: "false"
+      MAX_UPLOAD_BYTES: 5242880
+      DEFAULT_STORAGE_LIMIT_BYTES: 52428800
+      UPLOAD_DIR: /app/uploads
+      LOGIN_RATE_MAX: 10
+      LOGIN_RATE_WINDOW: 1 minute
+      EVENT_RATE_MAX: 30
+      EVENT_RATE_WINDOW: 1 minute
+      NOTIFY_ATTEMPTS: 5
+      NOTIFY_BACKOFF_MS: 1000
+      QUEUE_NAME: notifications
+    ports:
+      - "3000:3000"
+    volumes:
+      - fielddesk_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 25s
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://fielddesk:fielddesk@postgres:5432/fielddesk
+      REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: info
+      NOTIFY_ATTEMPTS: 5
+      NOTIFY_BACKOFF_MS: 1000
+      QUEUE_NAME: notifications
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  fielddesk_pg:
+  fielddesk_uploads:
